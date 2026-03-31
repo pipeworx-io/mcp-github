@@ -1,13 +1,3 @@
-/**
- * GitHub MCP — wraps the GitHub public REST API (no auth required for public endpoints)
- *
- * Tools:
- * - search_repos: search GitHub repositories by keyword
- * - get_repo: get full details for a specific repository
- * - list_repo_issues: list open/closed issues for a repository
- * - get_user: get a GitHub user's public profile
- */
-
 interface McpToolDefinition {
   name: string;
   description: string;
@@ -22,6 +12,17 @@ interface McpToolExport {
   tools: McpToolDefinition[];
   callTool: (name: string, args: Record<string, unknown>) => Promise<unknown>;
 }
+
+/**
+ * GitHub MCP — wraps the GitHub public REST API (no auth required for public endpoints)
+ *
+ * Tools:
+ * - search_repos: search GitHub repositories by keyword
+ * - get_repo: get full details for a specific repository
+ * - list_repo_issues: list open/closed issues for a repository
+ * - get_user: get a GitHub user's public profile
+ */
+
 
 const BASE_URL = 'https://api.github.com';
 const HEADERS = { 'User-Agent': 'pipeworx-mcp', Accept: 'application/vnd.github+json' };
