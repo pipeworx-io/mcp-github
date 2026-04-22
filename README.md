@@ -1,36 +1,54 @@
 # mcp-github
 
-MCP server for GitHub data. Search repositories, get repo details, list issues, and look up user profiles via the GitHub REST API — no API key required for public data.
+GitHub MCP — wraps the GitHub public REST API (no auth required for public endpoints)
 
-Part of the [Pipeworx](https://pipeworx.io) open MCP gateway.
+Part of [Pipeworx](https://pipeworx.io) — an MCP gateway connecting AI agents to 250+ live data sources.
 
 ## Tools
 
 | Tool | Description |
 |------|-------------|
-| `search_repos` | Search GitHub repositories by keyword, sort by stars/forks/updated |
-| `get_repo` | Get full details for a repository by owner/name |
-| `list_repo_issues` | List open/closed issues for a repository |
-| `get_user` | Get a GitHub user's public profile |
 
 ## Quick Start
+
+Add to your MCP client (Claude Desktop, Cursor, Windsurf, etc.):
 
 ```json
 {
   "mcpServers": {
     "github": {
-      "command": "npx",
-      "args": ["-y", "mcp-remote@latest", "https://gateway.pipeworx.io/github/mcp"]
+      "url": "https://gateway.pipeworx.io/github/mcp"
     }
   }
 }
 ```
 
-Or use the CLI:
+Or connect to the full Pipeworx gateway for access to all 250+ data sources:
 
-```bash
-npx pipeworx use github
+```json
+{
+  "mcpServers": {
+    "pipeworx": {
+      "url": "https://gateway.pipeworx.io/mcp"
+    }
+  }
+}
 ```
+
+## Using with ask_pipeworx
+
+Instead of calling tools directly, you can ask questions in plain English:
+
+```
+ask_pipeworx({ question: "your question about Github data" })
+```
+
+The gateway picks the right tool and fills the arguments automatically.
+
+## More
+
+- [All tools and guides](https://github.com/pipeworx-io/examples)
+- [pipeworx.io](https://pipeworx.io)
 
 ## License
 
