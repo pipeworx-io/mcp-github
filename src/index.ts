@@ -200,10 +200,27 @@ async function getFileContents(args: Record<string, unknown>, headers: Record<st
   return { owner, repo, path: file.path ?? path, type: 'file', size: file.size ?? null, truncated, content: truncated ? text.slice(0, CAP) : text };
 }
 
+// Agents commonly pass the GitHub shorthand "owner/repo" as a single string
+// (in repo / repository / repo_full / url), instead of separate owner+repo —
+// the top error source for repo tools. Normalize any combined form (incl. a
+// full github.com URL) into args.owner + args.repo before dispatch.
+function normalizeOwnerRepo(args: Record<string, unknown>): void {
+  if (args.owner && args.repo && !String(args.repo).includes('/')) return;
+  const combined = String(
+    (args.owner && args.repo ? `${args.owner}/${args.repo}` : '') ||
+      args.repo || args.repository || args.repo_full || args.full_name || args.url || args.owner || '',
+  ).trim();
+  const m = combined.match(/(?:github\.com\/)?([\w.-]+)\/([\w.-]+?)(?:\.git|\/|$)/);
+  if (m) { args.owner = m[1]; args.repo = m[2]; }
+}
+
 async function callTool(name: string, args: Record<string, unknown>): Promise<unknown> {
   const apiKey = typeof args._apiKey === 'string' && args._apiKey ? args._apiKey : undefined;
   delete args._apiKey;
   const headers = ghHeaders(apiKey);
+  if (['get_repo', 'list_repo_issues', 'get_releases', 'get_file_contents', 'list_commits'].includes(name)) {
+    normalizeOwnerRepo(args);
+  }
   switch (name) {
     case 'search_repos':
       return searchRepos(
@@ -237,19 +254,64 @@ async function callTool(name: string, args: Record<string, unknown>): Promise<un
   }
 }
 
+// LLMs routinely write human date expressions in GitHub date qualifiers
+// (created:last-month, pushed:last-week), which GitHub rejects with 422
+// ("not a recognized date/time format") — the top github 422 class in
+// production. Translate the common relative expressions to ISO 8601 up front;
+// values that are already valid (ISO dates, ranges, *, operators) start with a
+// digit or symbol and are left untouched.
+const REL_DATE_DAYS: Record<string, number> = {
+  today: 0, yesterday: 1,
+  'last-week': 7, 'past-week': 7, 'this-week': 7, lastweek: 7,
+  'last-month': 30, 'past-month': 30, 'this-month': 30, lastmonth: 30,
+  'last-year': 365, 'past-year': 365, 'this-year': 365, lastyear: 365,
+};
+const DATE_QUALIFIER = /\b(created|pushed|updated):(?:>=|<=|>|<)?([A-Za-z][\w-]*)/gi;
+
+function isoDaysAgo(days: number): string {
+  return new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10);
+}
+function normalizeDateQualifiers(query: string): string {
+  return query.replace(DATE_QUALIFIER, (m, field: string, val: string) => {
+    const days = REL_DATE_DAYS[String(val).toLowerCase()];
+    return days === undefined ? m : `${field}:>=${isoDaysAgo(days)}`;
+  });
+}
+function stripDateQualifiers(query: string): string {
+  return query.replace(/\b(?:created|pushed|updated):(?:>=|<=|>|<)?\S+/gi, '').replace(/\s{2,}/g, ' ').trim();
+}
+
 async function searchRepos(query: string, sort: string, perPage: number, headers: Record<string, string>) {
   // GitHub returns 422 for an empty/invalid query or an unsupported sort value.
   if (!query || !String(query).trim()) {
     throw new Error('Required argument "query" is missing. Pass a GitHub search query, e.g. "machine learning language:python stars:>1000".');
   }
   const size = Math.min(30, Math.max(1, perPage));
-  const params = new URLSearchParams({ q: String(query).trim(), order: 'desc', per_page: String(size) });
-  // Only send `sort` if it's a value GitHub's repo search accepts; otherwise
-  // omit it (defaults to best-match) rather than 422.
-  if (['stars', 'forks', 'help-wanted-issues', 'updated'].includes(sort)) params.set('sort', sort);
+  const doFetch = (q: string) => {
+    const params = new URLSearchParams({ q, order: 'desc', per_page: String(size) });
+    // Only send `sort` if it's a value GitHub's repo search accepts; otherwise
+    // omit it (defaults to best-match) rather than 422.
+    if (['stars', 'forks', 'help-wanted-issues', 'updated'].includes(sort)) params.set('sort', sort);
+    return fetch(`${BASE_URL}/search/repositories?${params}`, { headers });
+  };
 
-  const res = await fetch(`${BASE_URL}/search/repositories?${params}`, { headers });
-  if (!res.ok) {
+  const normalized = normalizeDateQualifiers(String(query).trim());
+  let res = await doFetch(normalized);
+
+  // Auto-recover from date-format 422s: if a date value still isn't ISO 8601,
+  // strip the date qualifiers and retry once so the query returns results
+  // instead of failing into no_match.
+  if (res.status === 422) {
+    const body = await res.text().catch(() => '');
+    if (/date|time format/i.test(body)) {
+      const stripped = stripDateQualifiers(normalized);
+      if (stripped && stripped !== normalized) res = await doFetch(stripped);
+    }
+    if (!res.ok) {
+      const b = res.bodyUsed ? body : await res.text().catch(() => body);
+      throw new Error(`GitHub rejected the search query (422). ${b.slice(0, 180)} — use ISO dates (created:>=2024-01-01) and qualifiers like language:python stars:>1000.`);
+    }
+  } else if (!res.ok) {
     const body = await res.text().then((t) => t.slice(0, 200)).catch(() => '');
     throw new Error(`GitHub search error: ${res.status} ${res.statusText}${body ? ' — ' + body : ''}`);
   }

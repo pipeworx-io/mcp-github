@@ -1,6 +1,6 @@
 {
   "name": "@pipeworx/mcp-github",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "GitHub MCP — wraps the GitHub public REST API (no auth required for public endpoints)",
   "type": "module",
   "main": "src/index.ts",
