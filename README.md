@@ -2,14 +2,14 @@
 
 GitHub MCP — wraps the GitHub public REST API (no auth required for public endpoints)
 
-Part of [Pipeworx](https://pipeworx.io) — an MCP gateway connecting AI agents to 1475+ live data sources.
+Part of [Pipeworx](https://pipeworx.io) — an MCP gateway connecting AI agents to 1679+ live data sources.
 
 ## Tools
 
 | Tool | Description |
 |------|-------------|
 | `search_repos` | Search GitHub repositories by keyword. Returns repo name, description, star count, forks, primary language, and URL. Use when exploring projects or finding code implementations. |
-| `get_repo` | Look up ONE named repository by its owner/repo slug — "facebook/react", "torvalds/linux", "vercel/next.js". Use this whenever the repository is named in the question. Answers how many stars / forks / watchers a repo has, what license and language it uses, its topics, description, open issue count, and when it was last pushed. |
+| `get_repo` | Look up ONE named repository by its owner/repo slug — "facebook/react", "torvalds/linux", "vercel/next.js". Use this whenever the repository is named in the question. Answers how many stars / forks / watchers a repo has, what license and language it uses, its topics, description, open issue count, its default branch, and when it was last pushed (pushed_at). |
 | `list_repo_issues` | List issues for a GitHub repository by owner and repo name; filters pull requests out automatically. Returns issue number, title, state, labels, author, comment count, URL, and timestamps. Defaults to open issues. |
 | `get_user` | Get a GitHub user's public profile info. Returns name, bio, company, location, public repo count, followers, and social links. Specify username (e.g., username="torvalds"). |
 | `get_file_contents` | Read a file from a PUBLIC GitHub repository (or list a directory) by path. PREFER OVER WEB SEARCH for "show me the README / package.json / <file> of <repo>", "read <path> from <owner/repo>", inspecting source or config files. Pass owner + repo + path (omit path or "" for the repo root listing). Optional ref = branch/tag/commit SHA. Returns decoded text for files (capped ~60k), or a directory listing of {name, path, type, size}. |
@@ -62,9 +62,45 @@ directly, instead of just this one's:
 }
 ```
 
-Both URLs reach the same gateway and the same 1475+ data sources. The
+Both URLs reach the same gateway and the same 1679+ data sources. The
 only difference is which pack's tools are listed **directly**; `ask_pipeworx`
 reaches all of them from either one.
+
+## No MCP client? Call it over HTTP
+
+```bash
+curl -X POST https://gateway.pipeworx.io/v1/tools/search_repos \
+  -H 'Content-Type: application/json' \
+  -d '{"query":"react hooks"}'
+```
+
+No account needed for the first calls. Inspect any tool: `GET https://gateway.pipeworx.io/v1/tools/search_repos`. Find one: `POST https://gateway.pipeworx.io/v1/tools/search_packs` with `{"query":"..."}`.
+
+## Standalone (no gateway account)
+
+This package also runs as a local stdio MCP server — no Pipeworx account, no
+gateway round-trip:
+
+```json
+{
+  "mcpServers": {
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@pipeworx/mcp-github"]
+    }
+  }
+}
+```
+
+Or run it directly to confirm it starts:
+
+```bash
+npx -y @pipeworx/mcp-github
+```
+
+It speaks MCP over stdin/stdout and answers `initialize`/`tools/list`/`tools/call`
+for **only** this pack's tools — none of the shared meta-tools the gateway
+connection above adds. Same source, same tools, no ask_pipeworx routing.
 
 ## Using with ask_pipeworx
 
