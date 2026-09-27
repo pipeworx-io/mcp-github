@@ -712,7 +712,7 @@ const tools: McpToolExport['tools'] = [
   {
     name: 'search_repos',
     description:
-      'Search GitHub REPOSITORIES (whole projects) by keyword — find which projects exist for a topic, library or tool. Returns repo name, description, star count, forks, primary language, and URL. To search the files inside a repository (a function, a string, a config), search_code with repo:owner/name is the tool.',
+      'Search GitHub repositories by keyword. Returns repo name, description, star count, forks, primary language, and URL. Use when exploring projects or finding code implementations.',
     inputSchema: {
       type: 'object',
       properties: {

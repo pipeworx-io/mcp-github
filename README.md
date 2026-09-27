@@ -8,7 +8,7 @@ Part of [Pipeworx](https://pipeworx.io) — an MCP gateway connecting AI agents 
 
 | Tool | Description |
 |------|-------------|
-| `search_repos` | Search GitHub REPOSITORIES (whole projects) by keyword — find which projects exist for a topic, library or tool. Returns repo name, description, star count, forks, primary language, and URL. To search the files inside a repository (a function, a string, a config), search_code with repo:owner/name is the tool. |
+| `search_repos` | Search GitHub repositories by keyword. Returns repo name, description, star count, forks, primary language, and URL. Use when exploring projects or finding code implementations. |
 | `get_repo` | Look up ONE named repository by its owner/repo slug — "facebook/react", "torvalds/linux", "vercel/next.js". Use this whenever the repository is named in the question. Answers how many stars / forks / watchers a repo has, what license and language it uses, its topics, description, open issue count, its default branch, and when it was last pushed (pushed_at). |
 | `list_repo_issues` | List issues for a GitHub repository by owner and repo name; filters pull requests out automatically. Returns issue number, title, state, labels, author, comment count, URL, and timestamps. Defaults to open issues. |
 | `get_user` | Get a GitHub user's public profile info. Returns name, bio, company, location, public repo count, followers, and social links. Specify username (e.g., username="torvalds"). |

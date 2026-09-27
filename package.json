@@ -1,6 +1,6 @@
 {
   "name": "@pipeworx/mcp-github",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "GitHub MCP — wraps the GitHub public REST API (no auth required for public endpoints)",
   "type": "module",
   "main": "src/index.ts",
@@ -26,7 +26,7 @@
     "@cloudflare/workers-types": "^4.20260405.1"
   },
   "pipeworx": {
-    "sourceHash": "v1-1f474fa45ccb4ccc814b08f5942aa6d9ee12e7d8f2d82ab4088c8219f2111ba1",
-    "sourceCommit": "bc59503bb19d6bc0b88a827a7dfcfb0a1af4799c"
+    "sourceHash": "v1-c4188159c3f72587cd4f0e87495c6ae4490ee687e8097af53cb02cb0633d0c40",
+    "sourceCommit": "eaa02971997fbfee27712ea66d7d5fd840d008ea"
   }
 }
